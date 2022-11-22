@@ -39,6 +39,8 @@ class Player:
         self.goal_size = goal_size
         self.current_size = goal_size / 4
 
+        self.turn = 0
+
     def move(self, last_percept, current_percept, info) -> (list, list, int):
         """Function which retrieves the current state of the amoeba map and returns an amoeba movement
 
@@ -52,18 +54,68 @@ class Player:
                     2. A list of positions the retracted cells have moved to
                     3. A byte of information (values range from 0 to 255) that the amoeba can use
         """
+        self.turn += 1
+        
         self.current_size = current_percept.current_size
         mini = min(5, len(current_percept.periphery) // 2)
         for i, j in current_percept.bacteria:
             current_percept.amoeba_map[i][j] = 1
 
-        retract = [tuple(i) for i in self.rng.choice(current_percept.periphery, replace=False, size=mini)]
-        movable = self.find_movable_cells(retract, current_percept.periphery, current_percept.amoeba_map,
-                                          current_percept.bacteria, mini)
+        print("Testing")
+        if self.turn == 1:
+            print("Size: ", self.current_size)
+            print("Met: ", self.metabolism)
+            print("Periphery size: ", len(current_percept.periphery))
+            print(current_percept.periphery)
+            print("---------------------")
+            # print(current_percept.movable_cells)
+            print(self.get_top_row(current_percept.periphery))
+
+            print("---------------------")
+            print(current_percept.movable_cells)
+
+
+            test = sorted( current_percept.movable_cells, key=lambda x: x[1], reverse=True )
+            print("---------------------")
+            print(test)
+
+
+
+
+        # retract = [tuple(i) for i in self.rng.choice(current_percept.periphery, replace=False, size=mini)]
+        # movable = self.find_movable_cells(retract, current_percept.periphery, current_percept.amoeba_map,
+        #                                   current_percept.bacteria, mini)
+        retract = self.get_top_row(current_percept.periphery)
+        
+        sorted_movable_cells = sorted( current_percept.movable_cells, key=lambda x: x[1], reverse=True )
+        movable = sorted_movable_cells[:len(retract)]
 
         info = 0
 
         return retract, movable, info
+
+    
+    def get_top_row(self, periphery):
+        # Gets top row of amoeba to be retracted
+        # For each x coord, we want the one with the lowest y coord
+        top_row_vals = {}
+        for (x, y) in periphery:
+            if x in top_row_vals:
+                if y < top_row_vals[x]:
+                    top_row_vals[x] = y
+            else:
+                top_row_vals[x] = y
+
+        top_row = []
+        for key, val in top_row_vals.items():
+            top_row.append((key, val))
+
+        return top_row
+
+
+    def get_movable_row(self, periphery):
+        pass
+
 
     def find_movable_cells(self, retract, periphery, amoeba_map, bacteria, mini):
         movable = []

@@ -57,7 +57,17 @@ class Player:
         for i, j in current_percept.bacteria:
             current_percept.amoeba_map[i][j] = 1
 
-        retract = [tuple(i) for i in self.rng.choice(current_percept.periphery, replace=False, size=mini)]
+        # retracts 5 -- change this to 3?
+        retract = set()
+        while len(retract) < 5:
+            i = self.rng.choice(current_percept.periphery, replace=False)
+            x = i[0]
+            y = i[1]
+            if x < 50 and y > 50:
+                retract.add(tuple(i))
+        retract = list(retract)
+        #retract = [tuple(i) for i in self.rng.choice(current_percept.periphery, replace=False, size=mini)]
+
         movable = self.find_movable_cells(retract, current_percept.periphery, current_percept.amoeba_map,
                                           current_percept.bacteria, mini)
 
@@ -70,8 +80,9 @@ class Player:
         new_periphery = list(set(periphery).difference(set(retract)))
         for i, j in new_periphery:
             nbr = self.find_movable_neighbor(i, j, amoeba_map, bacteria)
+            # print(nbr)
             for x, y in nbr:
-                if (x, y) not in movable:
+                if (x, y) not in movable and (x > 50 and y < 50):
                     movable.append((x, y))
 
         movable += retract
