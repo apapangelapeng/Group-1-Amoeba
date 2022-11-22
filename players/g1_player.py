@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 import logging
 from amoeba_state import AmoebaState
-
+import math
 
 class Player:
     def __init__(self, rng: np.random.Generator, logger: logging.Logger, metabolism: float, goal_size: int,
@@ -62,8 +62,11 @@ class Player:
                                           current_percept.bacteria, mini)
 
         info = 0
-        retrac = self.retract_rear_end(movable)
-        movable = self.extend_front_end()
+
+        retract = self.retract_rear_end(movable)
+        movable = self.extend_front_end(movable)
+        print("retract",retract)
+        print("movable",movable)
         return retract, movable, info
     def getPivotElement(self,array, left, right):
         if right < left:
@@ -75,7 +78,7 @@ class Player:
             middle = left + right//2
         else:
             middle = left + right//2 -1
-        print(middle)
+
         if (middle < right) and (array[middle] > array[middle + 1]):
             return middle
         if (middle > left )and (array[middle] < array[middle - 1]):
@@ -86,44 +89,61 @@ class Player:
             return self.getPivotElement(array, middle + 1, right)
     def retract_rear_end(self,moveable)-> list:
         #just gonna try to move the right
-        all_moveable = moveable.sorted()
-        x_index = np.array(all_moveable)[:, 0]
+        all_moveable = moveable
+        all_moveable.sort()
+        x_index = np.array(all_moveable)[: ,0]
         pivot = None
-        for i in range(len(x_index)-1):
-            first_num = x_index[i]
-            second_num = x_index[i+1]
-            if second_num - first_num >1:
-                pivot = i
-                break
-
-        before_pivot = min(num_cell_moveabel,pivot)
-        num_cell_moveabel = self.current_size * self.metabolism
-        retract = all_moveable[before_pivot:]
-        cell_left =num_cell_moveabel -  pivot
-        retract.append(all_moveable[:cell_left])
-    
-        retract = all_moveable[:num_cell_moveabel]
-        return retract
-    def extend_front_end(self,moveable) -> list:
-        all_moveable = moveable.sorted()
-        x_index = np.array(all_moveable)[:, 0]
-        pivot = None
-        for i in range(len(x_index)-1):
-            first_num = x_index[i]
-            second_num = x_index[i+1]
-            if second_num - first_num >1:
-                pivot = i
-                break
-        before_pivot = min(num_cell_moveabel,pivot)
-        num_cell_moveabel = self.current_size * self.metabolism
-        extend = all_moveable[:before_pivot]
-        cell_left =num_cell_moveabel -  pivot
-        retract.append(all_moveable[:cell_left])
         
+        for i in range(len(x_index)-1):
+            first_num = x_index[i]
+            second_num = x_index[i+1]
+            if second_num - first_num >1:
+                pivot = i
+                break
+        pivot = self.getPivotElement(all_moveable,0,len(all_moveable)-1)
+
+        num_cell_moveabel = math.ceil(self.current_size * self.metabolism)
+        before_pivot = None
+        if pivot == -1:
+            before_pivot = num_cell_moveabel
+        else:
+            before_pivot = min(num_cell_moveabel,num_cell_moveabel-pivot)
+
+        retract = all_moveable[:before_pivot]
+        cell_left =int(num_cell_moveabel -  pivot)
+
+        retract.append(all_moveable[:cell_left])
     
         retract = all_moveable[:num_cell_moveabel]
+        return retract[len(retract)//2 * -1:]
+    def extend_front_end(self,moveable) -> list:
+        all_moveable = moveable
+        all_moveable.sort()
+        x_index = np.array(all_moveable)[:, 0]
+        pivot = None
+        for i in range(len(x_index)-1):
+            first_num = x_index[i]
+            second_num = x_index[i+1]
+            if second_num - first_num >1:
+                pivot = i
+                break
+        pivot = self.getPivotElement(all_moveable,0,len(all_moveable)-1)
+        num_cell_moveabel = math.ceil(self.current_size * self.metabolism)
+        before_pivot = None
+        if pivot == -1:
+            before_pivot = num_cell_moveabel
+        else:
+            before_pivot = min(num_cell_moveabel,num_cell_moveabel-pivot)
+
+        retract = all_moveable[before_pivot:]
+        cell_left =int(num_cell_moveabel -  pivot)
+        print("all moveable",all_moveable)
+        retract+= (all_moveable[:cell_left])
+
+
         extend = []
         move_y= False
+        pivot = self.getPivotElement(all_moveable,0,len(all_moveable)-1)
         if pivot == len(all_moveable)-2:
             move_y =True
         for i in retract:
@@ -134,8 +154,8 @@ class Player:
                 x = i[0]+1
                 y = i[1]
             
-            extend.append([x,y])
-        return extend
+            extend.append((x,y))
+        return extend[len(extend)//2 ]
     def find_movable_cells(self, retract, periphery, amoeba_map, bacteria, mini):
         movable = []
         new_periphery = list(set(periphery).difference(set(retract)))
