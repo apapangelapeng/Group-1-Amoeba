@@ -88,7 +88,7 @@ class AmoebaGame:
         self.goal_size = self.amoeba_size * 4
         self.goal_reached = False
         self.turns = 0
-        self.max_turns = constants.max_turns
+        self.max_turns = args.final
         self.game_end = self.max_turns
         self.density = args.density
         self.bacteria = []

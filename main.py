@@ -8,6 +8,7 @@ if __name__ == '__main__':
                                                                             "is allowed to retract in one turn")
     parser.add_argument("--size", "-A", type=int, default=15, help="length of a side of the initial amoeba square "
                                                                    "(min=3, max=50")
+    parser.add_argument("--final", "-l", type=int, default=1000, help="the maximum number of days")
     parser.add_argument("--density", "-d", type=float, default=0.3, help="Density of bacteria on the map")
     parser.add_argument("--seed", "-s", type=int, default=2, help="Seed used by random number generator, specify 0 to "
                                                                   "use no seed and have different random behavior on "
