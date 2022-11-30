@@ -69,7 +69,7 @@ class Player:
         movable = self.find_movable_cells(retract, current_percept.periphery, current_percept.amoeba_map,
                                           current_percept.bacteria)
         moves = self.get_branch_tips(retract, movable, current_percept.periphery, 
-                                        current_percept.amoeba_map, split, split_pt=None)
+                                        current_percept.amoeba_map, split, split_pt=split_pt)
 
         move_num = min(mini, len(retract), len(moves))
         self.logger.info(f'retract: \n{retract}')
@@ -77,22 +77,33 @@ class Player:
         return retract[:move_num], moves[:move_num], info+1
 
     def get_branch_tips(self, retract, movable, periphery, amoeba_map, split, split_pt):
+        """
+        Get the rightmost tips of the brush branches, prioritizing shorter branches
+        """
         retract = np.array(retract)
         retract_even = retract[retract[:, 0]%2==0]
-        retract_even[:, 1] += 1 # check cell next to the even retraction cell
+        retract_even[:, 1] = (retract_even[:, 1] + 1) % 100 # check cell next to the even retraction cell
         prioritize_rows = []
         curr_col = []
         for i in range(retract_even.shape[0]):
             if amoeba_map[tuple(retract_even[i])] == 0:
                 # no cell next to even retraction cell
                 prioritize_rows.append(retract_even[i, 0])
-                curr_col.append(retract_even[i, 1]-1)
+                curr_col.append((retract_even[i, 1]-1) % 100)
+
+        self.logger.info(f'prioritized rows: \n{prioritize_rows}')
 
         periphery = np.array(periphery)
         movable = set(movable)
         self.logger.info(f'periphery: \n{periphery}')
-        rightmost_cells = periphery[periphery[:, 1]<=split_pt] if split else periphery
-        rightmost_val = rightmost_cells[:, 1].max()
+        if split:
+        	rightmost_cells = periphery[periphery[:, 1]<=split_pt]
+        	nonsplit_rows = set(periphery[:, 0].tolist()) - set(rightmost_cells[:, 0].tolist())
+        	for row in nonsplit_rows:
+        		rightmost_cells = np.concatenate([rightmost_cells, periphery[periphery[:, 0]==row]])
+        else:
+        	rightmost_cells = periphery
+        rightmost_val = rightmost_cells[:, 1].max() if not split else rightmost_cells[rightmost_cells[:, 1]<=split_pt].max()+100
 
         moves = []
         for i in range(len(prioritize_rows)):
@@ -101,11 +112,11 @@ class Player:
             next_row = bool(np.where(amoeba_map[row+1, :]==1)[0].shape[0])
             temp_move = (row, curr_col[i])
             for col in range(rightmost_val, curr_col[i]-1, -1):
-                if amoeba_map[row, col] == 0 and \
-                    (not prev_row or amoeba_map[row-1, col] == 1) and \
-                    (not next_row or amoeba_map[row+1, col] == 1):
+                if amoeba_map[row, col%100] == 0 and \
+                    (not prev_row or amoeba_map[row-1, col%100] == 1) and \
+                    (not next_row or amoeba_map[row+1, col%100] == 1):
                     # check if new location connects prev row and next row
-                    temp_move = (row, col)
+                    temp_move = (row, col%100)
                     break
             moves.append(temp_move)
         self.logger.info(f'prioritized rows:{prioritize_rows}, moves: {moves}')
@@ -117,17 +128,23 @@ class Player:
         self.logger.info(f'rightmost all: \n{rightmost_cells}')
         rightmost_cells = rightmost_cells[(-rightmost_cells[:, 1]).argsort()] # sort cells by col
         rightmost_cells = rightmost_cells[np.unique(rightmost_cells[:, 0], return_index=True)[1]] # keep rightmost cell for each row
-        target_col = rightmost_cells[:, 1].max()
-        left_col = rightmost_cells[:, 1].min()
-        if left_col == target_col:
-            target_col += 1
+        
+        if not split:
+            target_col = rightmost_cells[:, 1].max()
+            left_col = rightmost_cells[:, 1].min()
+            if left_col == target_col:
+                target_col += 1
+        else:
+            target_col = rightmost_cells[rightmost_cells[:, 1]<=split_pt].max()+100
         self.logger.info(f'rightmost unique: \n{rightmost_cells}')
         for i in range(rightmost_cells.shape[0]):
             col = rightmost_cells[i, 1]
+            col = col if not split or col > split_pt else col+100
             if col < target_col:
-                move = (rightmost_cells[i, 0], col+1)
+                move = (rightmost_cells[i, 0], (col+1)%100)
+                self.logger.info(f'move - movable: \n{move}, {move in movable}')
                 if move in movable:
-                    moves.append((rightmost_cells[i, 0], col+1))
+                    moves.append(move)
 
         return moves
 
