@@ -90,6 +90,13 @@ class Player:
         # TODO: add teeth shift
 
         self.current_size = current_percept.current_size
+        # print('----------')
+        # print(current_percept.current_size)
+        # print((current_percept.amoeba_map))
+        # print(current_percept.periphery)
+        # print(current_percept.bacteria)
+        # print(current_percept.movable_cells)
+
 
         mini = min(5, len(current_percept.periphery) // 2)
         for i, j in current_percept.bacteria:
@@ -103,30 +110,37 @@ class Player:
 
         movable_location = current_percept.movable_cells
         periphery = current_percept.periphery
-        info = info     # initially 0
+        infoFields = InfoMem(infobits=info)     # initially 0
+        print(infoFields.pivot)
+        print(infoFields.teeth_shifted)
+
 
         if self.is_square(current_percept):
             # print("first step")
             upper_right = self.find_upper_right(periphery, -1) 
-            info = int(upper_right[0]) # change the info of the upper right corner
+            infoFields.pivot = int(upper_right[0]) # change the info of the upper right corner
+
+            print(infoFields.pivot)
+            print(infoFields.teeth_shifted)
+
             # print("info type ", type(info)) 
 
         else:
-            upper_right = self.find_upper_right(periphery, info)
+            upper_right = self.find_upper_right(periphery, infoFields.pivot)
         
-        
+            print(upper_right)
         comb_formation = self.give_comb_formation(self.current_size, upper_right, self.teeth_length, self.teeth_gap)
         # if the comb is about 90% formed then we can start moving 
         #print("current_size", self.current_size )
         
-        
+
         print(self.percentage_covered(comb_formation, periphery), self.acceptable_similarity)
         if self.percentage_covered(comb_formation, periphery) >= self.acceptable_similarity:
             print("moving!")
 
-            info -= 1
-            info %= 100
-            upper_right = (info, upper_right[1]) # move left 1
+            infoFields.pivot -= 1
+            infoFields.pivot %= 100
+            upper_right = (infoFields.pivot, upper_right[1]) # move left 1
             comb_formation = self.give_comb_formation(self.current_size, upper_right, self.teeth_length,self.teeth_gap)
         else:
             print("Not Moving")
@@ -141,6 +155,8 @@ class Player:
         print("retract=", retract)
         print("extend=", extend)
 
+
+        info = infoFields.store_info_details(infoFields.pivot, infoFields.teeth_shifted)
         return  retract, extend, info
 
     def percentage_covered (self, comb_formation,periphery):
@@ -309,77 +325,39 @@ class Player:
     
 
 
-class Perm:
-    def __init__(self, valid_cards=tuple(range(52 - 12, 52)), valid_char_str=list(range(0,101))):
-        """Borrowed and modified from group 7"""
-        self.encoding_len = len(valid_cards)
-        self.max_msg_len = math.floor(math.log(math.factorial(self.encoding_len), len(valid_char_str)))
-        self.perm_zero = valid_cards
-        factorials = [0] * self.encoding_len
-        for i in range(self.encoding_len):
-            factorials[i] = math.factorial(self.encoding_len - i - 1)
-        self.factorials = factorials
-        self.char_list = valid_char_str
-
-    def check_num_too_large(self, num):
-        items = list(self.perm_zero[:])
-        f = self.factorials[0]
-        lehmer = num // f
-        if lehmer > len(items)-1:
-            return True
+class InfoMem:
+    def __init__(self, infobits=None):
+        # Storing upper right value and shifting parameter. 7 bits + 1 bit
+        if infobits is not None:
+            if infobits == 0: # initial step
+                self.pivot, self.teeth_shifted = self.get_info_details(infobits)             
+            else:
+                self.pivot, self.teeth_shifted= self.get_info_details(infobits) # pivot = upper_right data                
         else:
-            return False
+             self.pivot, self.teeth_shifted = 52, 1
 
-    def num_to_perm(self, n):
-        if self.check_num_too_large(n):
-            return []
+    def get_info_details(self, information: int) -> (int, int):
+        """Split infobits apart from infromation_int
+            Intake:
+                infobits (int): grouped up bits of information in int format
+            Outtake:
+                Tuple (pivot, teeth_shifted) split apart info
+        """
+        info_bits = "{0:b}".format(information).zfill(8)
 
-        n_copy = n
+        return int(info_bits[0:7], 2), int(info_bits[7:8], 2)
 
-        for start in reversed(range(len(self.factorials))):
-            items = list(self.perm_zero[:])
-            failure = False
-            perm = []
-            n = n_copy
-            for idx in range(start, len(self.factorials)):
-                f = self.factorials[idx]
-                lehmer = n // f
-                
-                if lehmer >= len(items):
-                    failure = True
-                    break
-                
-                perm.append(items.pop(lehmer))
-                n %= f
+    def store_info_details(self, pivot: int, teeth_shifted: int) -> int:
+        """ Stick infobits together and return a integer
+            Intake:
+                pivot (int): 7 bits for location of upper right of amoeba
+                teeth_shifted (int): 1 bit to store teeth_shifting parameter
+                # TODO: can implement other algorithm to create more space if required
+            Output:
+                int: the encoded information as an int
+        """
+        assert pivot >= 0 and pivot <= 100 # upper right x val is on the board
+        information_int = "{:07b}{:01b}".format(pivot, teeth_shifted)
 
-            if not failure:
-                # check that perm is contiguous
-                if sorted(perm) != list(range(30, 30 + len(perm))):
-                    #print('SEQ FAILURE')
-                    failure = True
-                    continue
-                
-                if self.perm_to_num(perm) != n_copy:
-                    failure = True
-                    continue
-                
-                for idx in range(start):
-                    perm.insert(0, 51 - idx)
-                
-                break
-        
-        return perm
+        return int(information_int, 2)
 
-  
-    def perm_to_num(self, permutation):
-        """Convert a sequence of cards into a decimal number"""
-        n = len(permutation)
-        number = 0
-
-        for i in range(n):
-            k = 0
-            for j in range(i + 1, n):
-                if permutation[j] < permutation[i]:
-                    k += 1
-            number += k * self.factorials[22 - n + i]
-        return number
