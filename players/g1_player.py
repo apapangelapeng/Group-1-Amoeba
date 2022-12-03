@@ -21,20 +21,6 @@ def coords_to_map(coords: list[tuple[int, int]], size=MAP_DIM) -> npt.NDArray:
     return amoeba_map
 
 
-def show_amoeba_map(amoeba_map: npt.NDArray, retracts=[], extends=[]) -> None:
-    retracts_map = coords_to_map(retracts)
-    extends_map = coords_to_map(extends)
-
-    map = np.zeros((MAP_DIM, MAP_DIM), dtype=np.int8)
-    for x in range(MAP_DIM):
-        for y in range(MAP_DIM):
-            # transpose map for visualization as we add cells
-            if retracts_map[x, y] == 1:
-                map[y, x] = -1
-            elif extends_map[x, y] == 1:
-                map[y, x] = 2
-            elif amoeba_map[x, y] == 1:
-                map[y, x] = 1
 
 class Player:
     def __init__(self, rng: np.random.Generator, logger: logging.Logger, metabolism: float, goal_size: int,
@@ -69,7 +55,7 @@ class Player:
         self.metabolism = metabolism
         self.goal_size = goal_size
         self.current_size = goal_size / 4
-        self.teeth_length = 2 # hyper parameter
+        self.teeth_length = 10 # hyper parameter
         self.teeth_gap = 2 # hyper parameter
         self.acceptable_similarity = 0.8 # how similar the ideal format and the current shape should be before we start to move
 
@@ -90,6 +76,7 @@ class Player:
         # TODO: add teeth shift
 
         self.current_size = current_percept.current_size
+        self.movable = False
         # print('----------')
         # print(current_percept.current_size)
         # print((current_percept.amoeba_map))
@@ -120,22 +107,22 @@ class Player:
             upper_right = self.find_upper_right(periphery, -1) 
             infoFields.pivot = int(upper_right[0]) # change the info of the upper right corner
 
-            print(infoFields.pivot)
-            print(infoFields.teeth_shifted)
+            #print(infoFields.pivot)
+            #print(infoFields.teeth_shifted)
 
             # print("info type ", type(info)) 
 
         else:
             upper_right = self.find_upper_right(periphery, infoFields.pivot)
         
-            print(upper_right)
+            #print(upper_right)
         comb_formation = self.give_comb_formation(self.current_size, upper_right, self.teeth_length, self.teeth_gap)
         # if the comb is about 90% formed then we can start moving 
         #print("current_size", self.current_size )
         
 
-        print(self.percentage_covered(comb_formation, periphery), self.acceptable_similarity)
-        if self.percentage_covered(comb_formation, periphery) >= self.acceptable_similarity:
+        #print(self.percentage_covered(comb_formation, periphery), self.acceptable_similarity)
+        if self.move:
             print("moving!")
 
             infoFields.pivot -= 1
@@ -148,12 +135,12 @@ class Player:
         # print(upper_right)
         moveable_cell_num = math.ceil(self.metabolism* self.current_size)
         retract, extend = self.move_formation(moveable_cell_num, periphery, movable_location, comb_formation)
-        print("comb_formation=", comb_formation)
+        """print("comb_formation=", comb_formation)
         
         print("movable_location=", movable_location)
         print("periphery=", periphery)
         print("retract=", retract)
-        print("extend=", extend)
+        print("extend=", extend)"""
 
 
         info = infoFields.store_info_details(infoFields.pivot, infoFields.teeth_shifted)
@@ -162,8 +149,14 @@ class Player:
     def percentage_covered (self, comb_formation,periphery):
         periphery_set = {tuple(x) for x in periphery} 
         comb_formation_set = {tuple(x) for x in comb_formation} 
-        over_lap = periphery_set & comb_formation_set
-        percentage_covered = len(over_lap)/len(comb_formation_set)
+        over_lap = periphery_set & comb_formation_set ## what are the cells that are on point
+        diff = None
+        print(len(over_lap))
+        if (len(comb_formation_set)- len(over_lap))>0:
+            diff =  len(comb_formation_set)- len(over_lap)
+        else:
+            diff = 0
+        percentage_covered = 1- (diff/len(comb_formation_set))
         return percentage_covered
     
     def give_comb_formation(self, cell_num: int, upper_right: (int, int), teeth_length: int, teeth_gap:int)-> list[(int, int)]:
@@ -271,7 +264,8 @@ class Player:
         formation = np.zeros((MAP_DIM,MAP_DIM),dtype=int)
         """print("cells_not_on_spot",cells_not_on_spot)
         print("destination",destination)"""
-        show_amoeba_map(formation, retract, extend)
+        if len(retract) <= math.floor(self.current_size*0.1):
+            self.movable = True
         return retract, extend
 
     """borrowed from group 5"""
