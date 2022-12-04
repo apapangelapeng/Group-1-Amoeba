@@ -8,6 +8,7 @@ from statistics import mode
 import numpy.typing as npt
 from typing import Tuple, List
 import time
+import loggerOutput
 
 MAP_DIM = 100
 
@@ -85,15 +86,11 @@ class Player:
         # print(current_percept.movable_cells)
 
 
-        mini = min(5, len(current_percept.periphery) // 2)
+       
         for i, j in current_percept.bacteria:
             current_percept.amoeba_map[i][j] = 1
 
-        retract = [tuple(i) for i in self.rng.choice(current_percept.periphery, replace=False, size=mini)]
-        """ movable = self.find_movable_cells(retract, current_percept.periphery, current_percept.amoeba_map,
-                                          current_percept.bacteria, mini) 
-        retrac = self.retract_rear_end(movable)
-        movable = self.extend_front_end() """
+
 
         movable_location = current_percept.movable_cells
         periphery = current_percept.periphery
@@ -116,7 +113,17 @@ class Player:
             upper_right = self.find_upper_right(periphery, infoFields.pivot)
         
             #print(upper_right)
-        comb_formation = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
+        comb_formation,extra_cell = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
+        new_ur  = upper_right
+        while extra_cell:
+            new_ur = ((new_ur[0]+self.teeth_length
+                       )%100, new_ur[1])
+            comb_formation.append(new_ur)
+            extra_cell -= 1
+            new_comb_formation,extra_cell = self.give_comb_formation(extra_cell, new_ur, self.teeth_length, self.teeth_gap)
+            comb_formation += new_comb_formation
+            
+            
         # if the comb is about 90% formed then we can start moving 
         #print("current_size", current_size )
         
@@ -142,8 +149,27 @@ class Player:
 
 
         info = infoFields.store_info_details(infoFields.pivot, infoFields.teeth_shifted)
+         #--------- writing things to output ------------------------------------
+        if loggerOutput.comb_formation:
+            self.write_pickle("comb_formation",comb_formation)
+        if loggerOutput.movable_location:
+            self.write_pickle("movable_location",movable_location)
+        if loggerOutput.periphery:
+            self.write_pickle("periphery",periphery)
+        if loggerOutput.extend:
+            self.write_pickle("extend",extend)
+        if loggerOutput.retract:
+            print(retract)
+            self.write_pickle("retract",retract)
+    
         return  retract, extend, info
-
+    
+    def write_pickle(self, file_name,data):
+        
+        with open("output_coord/"+file_name+".pickle", 'wb')as f:
+        
+            pickle.dump(data,f)
+        f.close()
     def movable (self, comb_formation,periphery):
         periphery_set = {tuple(x) for x in periphery} 
         comb_formation_set = {tuple(x) for x in comb_formation} 
@@ -167,7 +193,7 @@ class Player:
         gap = False
         gap_left = teeth_gap
         to_right = True
-
+        extra_cell =0
         while True > 0:
             if not(cell_num > 0):
                 break
@@ -203,7 +229,7 @@ class Player:
                         cur_point_x %= 100
                         if (cur_point_x, cur_point_y) not in formation:  
                             # print("duplicate!")
-                            formation.append((cur_point_x, cur_point_y))
+                            extra_cell +=1
                             cell_num -= 1
                         to_right = False
                          
@@ -214,7 +240,7 @@ class Player:
         formation_set = list(set(map(tuple, formation)))
         #print("size of future comb", len(formation_set))
 
-        return formation
+        return formation,extra_cell
 
 
     def find_upper_right(self,formation:list[(int, int)], info)-> (int, int):
@@ -245,6 +271,7 @@ class Player:
         # print(cells_not_on_spot)
         cells_not_on_spot = list(cells_not_on_spot)
         cells_not_on_spot.sort()
+        print("cells not on spot",cells_not_on_spot)
         # print("cells_not_on_spot",cells_not_on_spot)
         # print("wanting_to_move",final_formation_set & movable_cell_set.symmetric_difference(final_formation_set) )
         destination = (final_formation_set & movable_cell_set.symmetric_difference(final_formation_set)) & movable_location_set

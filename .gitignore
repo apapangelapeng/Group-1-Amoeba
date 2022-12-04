@@ -10,3 +10,4 @@ render/
 .vscode/
 .venv/
 output.txt
+*.pickle
