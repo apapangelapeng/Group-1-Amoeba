@@ -49,16 +49,16 @@ class Player:
         #     # Dump the objects
         #     with open(precomp_path, 'wb') as f:
         #         pickle.dump([self.obj0, self.obj1, self.obj2], f)
-
+        
         self.rng = rng
         self.logger = logger
         self.metabolism = metabolism
         self.goal_size = goal_size
         self.current_size = goal_size / 4
-        self.teeth_length = 10 # hyper parameter
+        self.teeth_length = 1 # hyper parameter
         self.teeth_gap = 2 # hyper parameter
         self.acceptable_similarity = 0.8 # how similar the ideal format and the current shape should be before we start to move
-
+        logger.info(f"initalizing player 1, with initalize size :{ goal_size/4},teeth_length:{self.teeth_length}" )
     def move(self, last_percept, current_percept, info) -> (list, list, int):
         """Function which retrieves the current state of the amoeba map and returns an amoeba movement
 
@@ -75,8 +75,8 @@ class Player:
 
         # TODO: add teeth shift
 
-        self.current_size = current_percept.current_size
-        self.movable = False
+        current_size = current_percept.current_size
+        
         # print('----------')
         # print(current_percept.current_size)
         # print((current_percept.amoeba_map))
@@ -98,8 +98,8 @@ class Player:
         movable_location = current_percept.movable_cells
         periphery = current_percept.periphery
         infoFields = InfoMem(infobits=info)     # initially 0
-        print(infoFields.pivot)
-        print(infoFields.teeth_shifted)
+        #print(infoFields.pivot)
+        #print(infoFields.teeth_shifted)
 
 
         if self.is_square(current_percept):
@@ -116,54 +116,49 @@ class Player:
             upper_right = self.find_upper_right(periphery, infoFields.pivot)
         
             #print(upper_right)
-        comb_formation = self.give_comb_formation(self.current_size, upper_right, self.teeth_length, self.teeth_gap)
+        comb_formation = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
         # if the comb is about 90% formed then we can start moving 
-        #print("current_size", self.current_size )
+        #print("current_size", current_size )
         
 
         #print(self.percentage_covered(comb_formation, periphery), self.acceptable_similarity)
-        if self.move:
+        if self.movable(comb_formation,periphery):
             print("moving!")
 
             infoFields.pivot -= 1
             infoFields.pivot %= 100
             upper_right = (infoFields.pivot, upper_right[1]) # move left 1
-            comb_formation = self.give_comb_formation(self.current_size, upper_right, self.teeth_length,self.teeth_gap)
-        else:
-            print("Not Moving")
-            #TODO: add inway to fix comb after moving
+            comb_formation = self.give_comb_formation(current_size, upper_right, self.teeth_length,self.teeth_gap)
+            
         # print(upper_right)
-        moveable_cell_num = math.ceil(self.metabolism* self.current_size)
-        retract, extend = self.move_formation(moveable_cell_num, periphery, movable_location, comb_formation)
+        moveable_cell_num = math.ceil(self.metabolism* current_size)
+        retract, extend = self.move_formation(moveable_cell_num, periphery, movable_location, comb_formation,current_size)
         """print("comb_formation=", comb_formation)
         
         print("movable_location=", movable_location)
         print("periphery=", periphery)
-        print("retract=", retract)
-        print("extend=", extend)"""
+        print("retract=", retract)"""
+        self.logger.info("extend=")#, extend)
 
 
         info = infoFields.store_info_details(infoFields.pivot, infoFields.teeth_shifted)
         return  retract, extend, info
 
-    def percentage_covered (self, comb_formation,periphery):
+    def movable (self, comb_formation,periphery):
         periphery_set = {tuple(x) for x in periphery} 
         comb_formation_set = {tuple(x) for x in comb_formation} 
         over_lap = periphery_set & comb_formation_set ## what are the cells that are on point
-        diff = None
-        print(len(over_lap))
-        if (len(comb_formation_set)- len(over_lap))>0:
-            diff =  len(comb_formation_set)- len(over_lap)
+        if over_lap == comb_formation_set:
+            return True
         else:
-            diff = 0
-        percentage_covered = 1- (diff/len(comb_formation_set))
-        return percentage_covered
+            print("overlaplength vs comb_formation Length",len(over_lap),len(comb_formation_set))
+            return False
     
     def give_comb_formation(self, cell_num: int, upper_right: (int, int), teeth_length: int, teeth_gap:int)-> list[(int, int)]:
         ## (x,y), (x+1,y)
-        # print("Number of cells we have", cell_num)
+        #print("Number of cells we have", cell_num)
         #teeth_gap += 1 
-        #cell_num -= 1 TODO: check
+        cell_num -= 1 
         cur_point_x = upper_right[0]
         cur_point_y = upper_right[1]
         formation = []
@@ -217,7 +212,7 @@ class Player:
                     gap = False
                     gap_left = teeth_gap
         formation_set = list(set(map(tuple, formation)))
-        print("size of future comb", len(formation_set))
+        #print("size of future comb", len(formation_set))
 
         return formation
 
@@ -241,7 +236,7 @@ class Player:
             y_coord = max(y_can)
             return (x_coord, y_coord)
     
-    def move_formation(self, num_movable_cell, movable_cell:list[(int,int)], movable_location:list[(int,int)], final_formation:list[(int,int)]):
+    def move_formation(self, num_movable_cell, movable_cell:list[(int,int)], movable_location:list[(int,int)], final_formation:list[(int,int)],current_size:int):
         movable_cell_set =  {tuple(x) for x in movable_cell} 
         final_formation_set ={tuple(x) for x in final_formation} 
         movable_location_set = {tuple(x) for x in movable_location} 
@@ -263,9 +258,10 @@ class Player:
             extend.append(destination[i])
         formation = np.zeros((MAP_DIM,MAP_DIM),dtype=int)
         """print("cells_not_on_spot",cells_not_on_spot)
-        print("destination",destination)"""
-        if len(retract) <= math.floor(self.current_size*0.1):
-            self.movable = True
+        print("destination",destination)
+        if len(retract) <= math.floor(current_size*0.001):
+            print("moving")
+            self.movable = True"""
         return retract, extend
 
     """borrowed from group 5"""
