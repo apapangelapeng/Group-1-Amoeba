@@ -60,6 +60,7 @@ class Player:
         self.teeth_gap = 2 # hyper parameter
         self.acceptable_similarity = 0.8 # how similar the ideal format and the current shape should be before we start to move
         logger.info(f"initalizing player 1, with initalize size :{ goal_size/4},teeth_length:{self.teeth_length}" )
+
     def move(self, last_percept, current_percept, info) -> (list, list, int):
         """Function which retrieves the current state of the amoeba map and returns an amoeba movement
 
@@ -90,8 +91,6 @@ class Player:
         for i, j in current_percept.bacteria:
             current_percept.amoeba_map[i][j] = 1
 
-
-
         movable_location = current_percept.movable_cells
         periphery = current_percept.periphery
         infoFields = InfoMem(infobits=info)     # initially 0
@@ -113,9 +112,11 @@ class Player:
             upper_right = self.find_upper_right(periphery, infoFields.pivot)
         
             #print(upper_right)
-        comb_formation,extra_cell = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
+        comb_formation, extra_cell = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
         new_ur  = upper_right
+
         while extra_cell:
+            print('in ere')
             new_ur = ((new_ur[0]+self.teeth_length
                        )%100, new_ur[1])
             comb_formation.append(new_ur)
@@ -124,18 +125,18 @@ class Player:
             comb_formation += new_comb_formation
             
             
-        # if the comb is about 90% formed then we can start moving 
+        # if the comb is about 80% formed then we can start moving 
         #print("current_size", current_size )
         
 
         #print(self.percentage_covered(comb_formation, periphery), self.acceptable_similarity)
-        if self.movable(comb_formation,periphery):
+        if self.movable(comb_formation, periphery):
             print("moving!")
 
             infoFields.pivot -= 1
             infoFields.pivot %= 100
             upper_right = (infoFields.pivot, upper_right[1]) # move left 1
-            comb_formation = self.give_comb_formation(current_size, upper_right, self.teeth_length,self.teeth_gap)
+            comb_formation = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
             
         # print(upper_right)
         moveable_cell_num = math.ceil(self.metabolism* current_size)
@@ -159,17 +160,19 @@ class Player:
         if loggerOutput.extend:
             self.write_pickle("extend",extend)
         if loggerOutput.retract:
-            print(retract)
+            print('ret', retract)
             self.write_pickle("retract",retract)
     
         return  retract, extend, info
     
     def write_pickle(self, file_name,data):
-        
-        with open("output_coord/"+file_name+".pickle", 'wb')as f:
+        filename = "output_coord/"+file_name+".pickle"
+        os.makedirs(os.path.dirname(filename), exist_ok=True)        
+        with open("output_coord/"+file_name+".pickle", 'wb') as f:
         
             pickle.dump(data,f)
         f.close()
+
     def movable (self, comb_formation,periphery):
         periphery_set = {tuple(x) for x in periphery} 
         comb_formation_set = {tuple(x) for x in comb_formation} 
@@ -238,9 +241,10 @@ class Player:
                     gap = False
                     gap_left = teeth_gap
         formation_set = list(set(map(tuple, formation)))
-        #print("size of future comb", len(formation_set))
-
-        return formation,extra_cell
+        # print("size of future comb", len(formation_set))
+        print('fo', formation)
+        print('ecell',extra_cell)
+        return formation, extra_cell
 
 
     def find_upper_right(self,formation:list[(int, int)], info)-> (int, int):
@@ -258,34 +262,41 @@ class Player:
             for y in ys:
                 if (x_coord, y) in formation:
                     possible_points.append((x_coord, y))
+            if len(possible_points) == 0:
+                pass #TODO: need to add new formation
             x_can, y_can = zip(*possible_points)
             y_coord = max(y_can)
             return (x_coord, y_coord)
     
     def move_formation(self, num_movable_cell, movable_cell:list[(int,int)], movable_location:list[(int,int)], final_formation:list[(int,int)],current_size:int):
         movable_cell_set =  {tuple(x) for x in movable_cell} 
-        final_formation_set ={tuple(x) for x in final_formation} 
+        final_formation_set = {tuple(x) for x in final_formation} 
         movable_location_set = {tuple(x) for x in movable_location} 
 
         cells_not_on_spot = movable_cell_set & movable_cell_set.symmetric_difference(final_formation_set)
-        # print(cells_not_on_spot)
         cells_not_on_spot = list(cells_not_on_spot)
         cells_not_on_spot.sort()
         print("cells not on spot",cells_not_on_spot)
         # print("cells_not_on_spot",cells_not_on_spot)
         # print("wanting_to_move",final_formation_set & movable_cell_set.symmetric_difference(final_formation_set) )
+        # print('ffs',final_formation_set)
+        # print('mcs', movable_cell_set)
+        # print('mls', movable_location_set)
         destination = (final_formation_set & movable_cell_set.symmetric_difference(final_formation_set)) & movable_location_set
          
         destination = list(destination)
         destination.sort()
+        print('desty', destination)
+        print('num_move_cell', num_movable_cell)
         retract=[]
         extend = []
-        for i in range(min(num_movable_cell,len(cells_not_on_spot),len(destination))):
+        for i in range(min(num_movable_cell, len(cells_not_on_spot), len(destination))):
+            # print('i=', i)
             retract.append(cells_not_on_spot[i])
             extend.append(destination[i])
         formation = np.zeros((MAP_DIM,MAP_DIM),dtype=int)
         """print("cells_not_on_spot",cells_not_on_spot)
-        print("destination",destination)
+        print("destination", destination)
         if len(retract) <= math.floor(current_size*0.001):
             print("moving")
             self.movable = True"""
