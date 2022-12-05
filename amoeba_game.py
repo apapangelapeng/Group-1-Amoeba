@@ -204,6 +204,13 @@ class AmoebaGame:
 
     def play_game(self):
         while self.turns != self.max_turns:
+            """ if self.turns == 41:
+                f = open("amoeba_map.txt", "w") # We will create this file.
+                #write your codes here
+                data = self.after_last_move.amoeba_map
+                for d in data :
+                    f.write(str(d))
+                exit(1)"""
             self.turns += 1
             self.play_turn()
             print("Turn {} complete".format(self.turns))
@@ -235,10 +242,15 @@ class AmoebaGame:
                 self.logger.debug("Received move from {}".format(self.player_name))
                 self.amoeba_move(retract, move)
             else:
+                
                 print("Valid move, but causes separation, hence cancelled.")
+                time.sleep(30)
+                exit(1)
                 self.logger.info("Invalid move from {} as it does not follow the rules".format(self.player_name))
         else:
             print("Invalid move")
+            time.sleep(30)
+            exit(1)
             self.logger.info("Invalid move from {} as it doesn't follow the return format".format(self.player_name))
 
         self.add_bacteria()
@@ -365,6 +377,8 @@ class AmoebaGame:
 
     def check_move(self, retract, move, periphery):
         if not set(retract).issubset(set(periphery)):
+            print("if not set(retract).issubset(set(periphery))")
+
             return False
 
         movable = retract[:]
@@ -376,6 +390,10 @@ class AmoebaGame:
                     movable.append((x, y))
 
         if not set(move).issubset(set(movable)):
+            print("if not set(move).issubset(set(movable)):")
+            for i in move:
+                if i not in movable:
+                    print(i)
             return False
 
         amoeba = np.copy(self.map_state)
@@ -405,7 +423,7 @@ class AmoebaGame:
                 stack.append(((a - 1) % constants.map_dim, b))
             if ((a + 1) % constants.map_dim, b) in result and check[(a + 1) % constants.map_dim][b] == 0:
                 stack.append(((a + 1) % constants.map_dim, b))
-
+        print("(amoeba == check).all()", (amoeba == check).all())
         return (amoeba == check).all()
 
     def amoeba_move(self, retract, move):
