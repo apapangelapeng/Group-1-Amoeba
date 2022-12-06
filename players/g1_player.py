@@ -60,7 +60,7 @@ class Player:
         self.metabolism = metabolism
         self.goal_size = goal_size
         self.current_size = goal_size / 4
-        self.teeth_length = 3 # hyper parameter
+        self.teeth_length = 2 # hyper parameter
         self.teeth_gap = 2 # hyper parameter
         self.acceptable_similarity = 0.8 # how similar the ideal format and the current shape should be before we start to move
         logger.info(f"initalizing player 1, with initalize size :{ goal_size/4},teeth_length:{self.teeth_length}" )
@@ -117,23 +117,19 @@ class Player:
         
             #print(upper_right)
         comb_formation, extra_cell = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
-        new_ur  = upper_right
+        new_ur = upper_right
 
         while extra_cell:
-            print(extra_cell)
-            new_ur = ((new_ur[0]+self.teeth_length
-                       )%100, new_ur[1])
+            print('ecece',extra_cell)
+
+            new_ur = ((new_ur[0] #took out self.teeth_length
+                       ) %100, new_ur[1])
             comb_formation.append(new_ur)
             extra_cell -= 1
-            new_comb_formation,extra_cell = self.give_comb_formation(extra_cell, new_ur, self.teeth_length, self.teeth_gap)
+            new_comb_formation, extra_cell = self.give_comb_formation(extra_cell, new_ur, self.teeth_length, self.teeth_gap)
             comb_formation += new_comb_formation
-            
-            
-        # if the comb is about 80% formed then we can start moving 
-        #print("current_size", current_size )
-        
 
-        #print(self.percentage_covered(comb_formation, periphery), self.acceptable_similarity)
+        
         if self.movable(comb_formation, current_percept.amoeba_map):
             print("moving!")
 
@@ -156,12 +152,12 @@ class Player:
         retract, extend = self.move_formation(moveable_cell_num, periphery, movable_location, comb_formation,current_size,periphery)
         """print("comb_formation=", comb_formation)
         
-        print("movable_location=", movable_location)
+        print("movable_location=", movable_location)"""
         print("periphery=", periphery)
-        print("retract=", retract)"""
-        self.logger.info("extend=")#, extend)
+        print("retract=", retract)
 
 
+        
         info = infoFields.store_info_details(infoFields.pivot, infoFields.teeth_shifted)
          #--------- writing things to output ------------------------------------
         if loggerOutput.comb_formation:
@@ -170,14 +166,21 @@ class Player:
         if loggerOutput.movable_location:
             self.write_pickle("movable_location",movable_location)
         if loggerOutput.periphery:
+            # print('periphery=', periphery)
             self.write_pickle("periphery",periphery)
         if loggerOutput.extend:
             self.write_pickle("extend",extend)
         if loggerOutput.retract:
-            print('ret', retract)
+            # print('ret=', retract)
             self.write_pickle("retract",retract)
         
-    
+        print('---')
+        print(retract)
+
+        print()
+        print(extend)
+        print()
+        print(info)
         return  retract, extend, info
     
     def write_pickle(self, file_name,data):
@@ -214,7 +217,7 @@ class Player:
         gap = False
         gap_left = teeth_gap
         to_right = True
-        extra_cell =0
+        extra_cell = 0
         while True > 0:
             if not(cell_num > 0):
                 break
@@ -226,7 +229,7 @@ class Player:
                     formation.append((cur_point_x, cur_point_y))
                     length_left -= 1
                     cell_num -= 1
-                
+
                 else:
                     #go down one extending the length of the comb
                     gap = True
@@ -267,11 +270,12 @@ class Player:
     def amoeba_index(self,amoeba_map):
         coords = []
         for x in range(100):
+            
             for y in range(100):
                 if amoeba_map[x][y] == 1:
                     coords.append((x,y))
         return coords
-    def find_upper_right(self,formation:list[(int, int)], info)-> (int, int):
+    def find_upper_right(self, formation:list[(int, int)], info)-> (int, int):
         # going to find the pivot first, then find the upper right corner
         xs, ys = zip(*formation)
         if info == -1:
@@ -300,8 +304,9 @@ class Player:
         cells_not_on_spot = movable_cell_set & movable_cell_set.symmetric_difference(final_formation_set)
         cells_not_on_spot = list(cells_not_on_spot)
         cells_not_on_spot.sort()
+        print(num_movable_cell)
         #print("cells not on spot",cells_not_on_spot)
-        # print("cells_not_on_spot",cells_not_on_spot)
+        print("cells_not_on_spot=",cells_not_on_spot)
         # print("wanting_to_move",final_formation_set & movable_cell_set.symmetric_difference(final_formation_set) )
         # print('ffs',final_formation_set)
         # print('mcs', movable_cell_set)
@@ -310,14 +315,15 @@ class Player:
         #print(final_formation_set & movable_cell_set.symmetric_difference(final_formation_set))
         destination = list(destination)
         destination.sort()
-        #print('desty', destination)
+        print('desty=', destination)
+
         #print('num_move_cell', num_movable_cell)
         retract=[]
         extend = []
         invalid_move_from = []
         invalid_move_to = []
         for i in range(min(num_movable_cell, len(cells_not_on_spot), len(destination))):
-            # print('i=', i)
+            print('i=', i)
             retract.append(cells_not_on_spot[i])
             extend.append(destination[i])
             new_retract = retract + [cells_not_on_spot[i]]
@@ -330,7 +336,7 @@ class Player:
                 print("invalid, going from:", cells_not_on_spot[i] ,"to",destination[i] )
                 invalid_move_from.append(cells_not_on_spot[i])
                 invalid_move_to.append(destination[i])"""
-        print("periphery=",periphery)
+        # print("periphery=",periphery)
         return retract, extend
 
     """borrowed from group 5"""
@@ -384,6 +390,7 @@ class Player:
             if amoeba_map[(x + 1) % 100][y] == 0:
                 out.append(((x + 1) % 100, y))
         return out
+
     def check_move(self, retract, move, periphery):
         if not set(retract).issubset(set(periphery)):
             print("if not set(retract).issubset(set(periphery))")
