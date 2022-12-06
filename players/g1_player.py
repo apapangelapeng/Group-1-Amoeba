@@ -132,7 +132,6 @@ class Player:
         
         if self.movable(comb_formation, current_percept.amoeba_map):
             print("moving!")
-
             infoFields.pivot -= 1
             infoFields.pivot %= 100
             upper_right = (infoFields.pivot, upper_right[1]) # move left 1
@@ -162,9 +161,9 @@ class Player:
          #--------- writing things to output ------------------------------------
         if loggerOutput.comb_formation:
             print('comb_formation=', comb_formation)
-            self.write_pickle("comb_formation",comb_formation)
+            self.write_pickle("comb_formation", comb_formation)
         if loggerOutput.movable_location:
-            self.write_pickle("movable_location",movable_location)
+            self.write_pickle("movable_location", movable_location)
         if loggerOutput.periphery:
             # print('periphery=', periphery)
             self.write_pickle("periphery",periphery)
@@ -191,15 +190,20 @@ class Player:
             pickle.dump(data,f)
         f.close()
 
-    def movable (self, comb_formation,amoeba_map):
+    def movable (self, comb_formation, amoeba_map):
         amoeba = self.amoeba_index(amoeba_map)
         amoeba_set = {tuple(x) for x in amoeba} 
-
+        print('ameoba_set= ',amoeba_set)
         comb_formation_set = {tuple(x) for x in comb_formation} 
         over_lap = amoeba_set & comb_formation_set ## what are the cells that are on point
-        
+        print('over_lap= ',over_lap)        # wait, overlap should be when they are combs not when the area overlaps??
+
+        print('comb_formation_set= ', comb_formation_set)
+
         if over_lap == comb_formation_set:
+            time.sleep(3)
             return True
+
         else:
             print("overlaplength vs comb_formation Length",len(over_lap),len(comb_formation_set))
             return False
