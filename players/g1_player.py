@@ -58,7 +58,8 @@ class Player:
         self.rng = rng
         self.logger = logger
         self.metabolism = metabolism
-        
+        self.is_first = True
+        self.teeth_shift_iter = 5 # hyper parameter :3
         self.goal_size = goal_size
         self.current_size = goal_size / 4
         self.teeth_length = 2 # hyper parameter
@@ -83,12 +84,12 @@ class Player:
         # TODO: add teeth shift     initial_coords = (0,0)
         current_size = current_percept.current_size
         
-        # print('----------')
-        # print(current_percept.current_size)
-        # print((current_percept.amoeba_map))
-        # print(current_percept.periphery)
-        # print(current_percept.bacteria)
-        # print(current_percept.movable_cells)
+        # #print(('----------')
+        # #print((current_percept.current_size)
+        # #print(((current_percept.amoeba_map))
+        # #print((current_percept.periphery)
+        # #print((current_percept.bacteria)
+        # #print((current_percept.movable_cells)
 
 
        
@@ -98,30 +99,30 @@ class Player:
         movable_location = current_percept.movable_cells
         periphery = current_percept.periphery
         infoFields = InfoMem(infobits=info)     # initially 0
-        #print(infoFields.pivot)
-        #print(infoFields.teeth_shifted)
-
-
+        print(infoFields.pivot)
+        print(infoFields.teeth_shifted)
+        #print(('lll')
         if self.is_square(current_percept):
-            # print("first step")
+            # #print(("first step")
             upper_right = self.find_upper_right(periphery, -1) 
             infoFields.pivot = int(upper_right[0]) # change the info of the upper right corner
 
-            #print(infoFields.pivot)
-            #print(infoFields.teeth_shifted)
+            ##print((infoFields.pivot)
+            ##print((infoFields.teeth_shifted)
 
-            # print("info type ", type(info)) 
+            # #print(("info type ", type(info)) 
 
         else:
+            #print(('lol', infoFields.pivot)
             upper_right = self.find_upper_right(periphery, infoFields.pivot)
 
-            #print(upper_right)
+            ##print((upper_right)
         comb_formation, extra_cell = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
         new_ur = upper_right
         self.upper_right = upper_right
-        print(self.upper_right)
+        #print((self.upper_right)
         while extra_cell:
-            print('ecece',extra_cell)
+            #print(('ecece',extra_cell)
 
             new_ur = ((new_ur[0] #took out self.teeth_length
                        ) %100, new_ur[1])
@@ -132,14 +133,21 @@ class Player:
 
         
         if self.movable(comb_formation, current_percept.amoeba_map):
-            print("moving!")
+            #print(("moving!")
             infoFields.pivot -= 1
             infoFields.pivot %= 100
+            #print((upper_right)
+
+
+
             upper_right = (infoFields.pivot, upper_right[1]) # move left 1
+            #print((upper_right)
+            self.is_first = False
+
             comb_formation,extra_cell  = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
             new_ur  = upper_right
             while extra_cell:
-                print("move extra cell",extra_cell)
+                #print(("move extra cell",extra_cell)
                 new_ur = ((new_ur[0]+self.teeth_length
                         )%100, new_ur[1])
                 comb_formation.append(new_ur)
@@ -147,40 +155,40 @@ class Player:
                 new_comb_formation,extra_cell = self.give_comb_formation(extra_cell, new_ur, self.teeth_length, self.teeth_gap)
                 comb_formation += new_comb_formation
             
-        # print(upper_right)
+        # #print((upper_right)
         moveable_cell_num = math.ceil(self.metabolism* current_size)
         retract, extend = self.move_formation(moveable_cell_num, periphery, movable_location, comb_formation,current_size,periphery)
-        """print("comb_formation=", comb_formation)
+        """#print(("comb_formation=", comb_formation)
         
-        print("movable_location=", movable_location)"""
-        print("periphery=", periphery)
-        print("retract=", retract)
+        #print(("movable_location=", movable_location)"""
+        #print(("periphery=", periphery)
+        #print(("retract=", retract)
 
 
-        
+        #print(('storing', infoFields.pivot, infoFields.teeth_shifted)
         info = infoFields.store_info_details(infoFields.pivot, infoFields.teeth_shifted)
          #--------- writing things to output ------------------------------------
         if loggerOutput.comb_formation:
-            print('comb_formation=', comb_formation)
+            #print(('comb_formation=', comb_formation)
             self.write_pickle("comb_formation", comb_formation)
         if loggerOutput.movable_location:
             self.write_pickle("movable_location", movable_location)
         if loggerOutput.periphery:
-            # print('periphery=', periphery)
+            # #print(('periphery=', periphery)
             self.write_pickle("periphery",periphery)
         if loggerOutput.extend:
             self.write_pickle("extend",extend)
         if loggerOutput.retract:
-            # print('ret=', retract)
+            # #print(('ret=', retract)
             self.write_pickle("retract",retract)
         
-        print('---')
-        print(retract)
+        #print(('---')
+        #print((retract)
 
-        print()
-        print(extend)
-        print()
-        print(info)
+        #print(()
+        #print((extend)
+        #print(()
+        #print((info)
         return  retract, extend, info
     
     def write_pickle(self, file_name,data):
@@ -196,21 +204,21 @@ class Player:
         amoeba_set = {tuple(x) for x in amoeba} 
         comb_formation_set = {tuple(x) for x in comb_formation} 
         over_lap = amoeba_set & comb_formation_set ## what are the cells that are on point
-        print('over_lap= ',over_lap)        # wait, overlap should be when they are combs not when the area overlaps??
+        #print(('over_lap= ',over_lap)        # wait, overlap should be when they are combs not when the area overlaps??
 
-        print('comb_formation_set= ', comb_formation_set)
+        #print(('comb_formation_set= ', comb_formation_set)
 
         if over_lap == comb_formation_set:
             # time.sleep(3)
             return True
 
         else:
-            print("overlaplength vs comb_formation Length",len(over_lap),len(comb_formation_set))
+            #print(("overlaplength vs comb_formation Length",len(over_lap),len(comb_formation_set))
             return False
     
     def give_comb_formation(self, cell_num: int, upper_right: (int, int), teeth_length: int, teeth_gap:int)-> list[(int, int)]:
         ## (x,y), (x+1,y)
-        #print("Number of cells we have", cell_num)
+        ##print(("Number of cells we have", cell_num)
         #teeth_gap += 1 
         cell_num -= 1 
         cur_point_x = upper_right[0]
@@ -256,7 +264,7 @@ class Player:
                         cur_point_x -= 1 # move the coordinate back 
                         cur_point_x %= 100
                         if (cur_point_x, cur_point_y) not in formation:  
-                            # print("duplicate!")
+                            # #print(("duplicate!")
                             extra_cell +=1
                             cell_num -= 1
                         to_right = False
@@ -266,9 +274,9 @@ class Player:
                     gap = False
                     gap_left = teeth_gap
         formation_set = list(set(map(tuple, formation)))
-        # print("size of future comb", len(formation_set))
-        #print('fo', formation)
-        #print('ecell',extra_cell)
+        # #print(("size of future comb", len(formation_set))
+        ##print(('fo', formation)
+        ##print(('ecell',extra_cell)
         return formation_set, extra_cell
 
     def amoeba_index(self,amoeba_map):
@@ -282,6 +290,9 @@ class Player:
     def find_upper_right(self, formation:list[(int, int)], info)-> (int, int):
         # going to find the pivot first, then find the upper right corner
         xs, ys = zip(*formation)
+        #print(('ff',formation)
+        #print((info)
+
         if info == -1:
             x_coord = max(xs)
         else:
@@ -296,6 +307,7 @@ class Player:
                     possible_points.append((x_coord, y))
             if len(possible_points) == 0:
                 pass #TODO: need to add new formation
+
             x_can, y_can = zip(*possible_points)
             y_coord = max(y_can)
             return (x_coord, y_coord)
@@ -309,29 +321,34 @@ class Player:
         cells_not_on_spot = movable_cell_set & movable_cell_set.symmetric_difference(final_formation_set)
         cells_not_on_spot = list(cells_not_on_spot)
         cells_not_on_spot.sort()
-        print(num_movable_cell)
-        #print("cells not on spot",cells_not_on_spot)
-        print("cells_not_on_spot=",cells_not_on_spot)
-        # print("wanting_to_move",final_formation_set & movable_cell_set.symmetric_difference(final_formation_set) )
-        # print('ffs',final_formation_set)
-        # print('mcs', movable_cell_set)
-        # print('mls', movable_location_set)
+        #print((num_movable_cell)
+        ##print(("cells not on spot",cells_not_on_spot)
+        #print(("cells_not_on_spot=",cells_not_on_spot)
+        # #print(("wanting_to_move",final_formation_set & movable_cell_set.symmetric_difference(final_formation_set) )
+        # #print(('ffs',final_formation_set)
+        # #print(('mcs', movable_cell_set)
+        # #print(('mls', movable_location_set)
         destination = (final_formation_set & movable_cell_set.symmetric_difference(final_formation_set)) & movable_location_set
-        #print(final_formation_set & movable_cell_set.symmetric_difference(final_formation_set))
+        ##print((final_formation_set & movable_cell_set.symmetric_difference(final_formation_set))
         destination = list(destination)
         destination.sort()
-        print('desty=', destination)
+        # destination = self.prioritize(destination)
+        #print(('desty=', destination)
 
-        #print('num_move_cell', num_movable_cell)
+        ##print(('num_move_cell', num_movable_cell)
+
         retract=[]
         extend = []
         invalid_move_from = []
         invalid_move_to = []
-        if self.upper_right[0] != 54:
+
+        if not(self.is_first):
+            #print(('tail')
             cells_not_on_spot = self.prioritize(cells_not_on_spot)
+        
 
         for i in range(min(num_movable_cell, len(cells_not_on_spot), len(destination))):
-            print('i=', i)
+            #print(('i=', i)
             retract.append(cells_not_on_spot[i])
             extend.append(destination[i])
             new_retract = retract + [cells_not_on_spot[i]]
@@ -341,10 +358,10 @@ class Player:
                 retract.append(cells_not_on_spot[i])
                 extend.append(destination[i])
             else:
-                print("invalid, going from:", cells_not_on_spot[i] ,"to",destination[i] )
+                #print(("invalid, going from:", cells_not_on_spot[i] ,"to",destination[i] )
                 invalid_move_from.append(cells_not_on_spot[i])
                 invalid_move_to.append(destination[i])"""
-        # print("periphery=",periphery)
+        # #print(("periphery=",periphery)
         return retract, extend
 
     def prioritize(self,l):
@@ -353,7 +370,10 @@ class Player:
         l_dtype =  [('x-val',int), ('y-val', int)]
         l_np=np.array(l,dtype=l_dtype)
         l_np = np.sort(l_np, order='x-val')  
-        l_np = l_np[::-1]
+        min_x, max_x = l_np[0][0], l_np[-1][0]
+        if abs(max_x - min_x) < 26:
+            l_np = l_np[::-1]
+
         return l_np.tolist()
     """borrowed from group 5"""
     
@@ -373,7 +393,7 @@ class Player:
 
     def is_square(self, current_percept):
         min_x, max_x, min_y, max_y = self.bounds(current_percept)
-        #print(min_x, max_x, min_y, max_y)
+        ##print((min_x, max_x, min_y, max_y)
         len_x = max_x - min_x + 1
         len_y = max_y - min_y + 1
         if len_x == len_y and len_x * len_y == current_percept.current_size:
@@ -409,7 +429,7 @@ class Player:
 
     def check_move(self, retract, move, periphery):
         if not set(retract).issubset(set(periphery)):
-            print("if not set(retract).issubset(set(periphery))")
+            #print(("if not set(retract).issubset(set(periphery))")
             return False
 
         movable = retract[:]
@@ -421,7 +441,7 @@ class Player:
                     movable.append((x, y))
 
         if not set(move).issubset(set(movable)):
-            print("if not set(move).issubset(set(movable)):")
+            #print(("if not set(move).issubset(set(movable)):")
             return False
 
         amoeba = np.copy( self.current_percept.amoeba_map)
@@ -452,7 +472,7 @@ class Player:
                 stack.append(((a - 1) % constants.map_dim, b))
             if ((a + 1) % constants.map_dim, b) in result and check[(a + 1) % constants.map_dim][b] == 0:
                 stack.append(((a + 1) % constants.map_dim, b))
-        print("(amoeba == check).all()", (amoeba == check).all())
+        #print(("(amoeba == check).all()", (amoeba == check).all())
         return (amoeba == check).all()
 
 
