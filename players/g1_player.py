@@ -58,6 +58,7 @@ class Player:
         self.rng = rng
         self.logger = logger
         self.metabolism = metabolism
+        
         self.goal_size = goal_size
         self.current_size = goal_size / 4
         self.teeth_length = 2 # hyper parameter
@@ -79,8 +80,7 @@ class Player:
                     3. A byte of information (values range from 0 to 255) that the amoeba can use
         """
 
-        # TODO: add teeth shift
-
+        # TODO: add teeth shift     initial_coords = (0,0)
         current_size = current_percept.current_size
         
         # print('----------')
@@ -114,11 +114,12 @@ class Player:
 
         else:
             upper_right = self.find_upper_right(periphery, infoFields.pivot)
-        
+
             #print(upper_right)
         comb_formation, extra_cell = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
         new_ur = upper_right
-
+        self.upper_right = upper_right
+        print(self.upper_right)
         while extra_cell:
             print('ecece',extra_cell)
 
@@ -193,7 +194,6 @@ class Player:
     def movable (self, comb_formation, amoeba_map):
         amoeba = self.amoeba_index(amoeba_map)
         amoeba_set = {tuple(x) for x in amoeba} 
-        print('ameoba_set= ',amoeba_set)
         comb_formation_set = {tuple(x) for x in comb_formation} 
         over_lap = amoeba_set & comb_formation_set ## what are the cells that are on point
         print('over_lap= ',over_lap)        # wait, overlap should be when they are combs not when the area overlaps??
@@ -201,7 +201,7 @@ class Player:
         print('comb_formation_set= ', comb_formation_set)
 
         if over_lap == comb_formation_set:
-            time.sleep(3)
+            # time.sleep(3)
             return True
 
         else:
@@ -305,6 +305,7 @@ class Player:
         final_formation_set = {tuple(x) for x in final_formation} 
         movable_location_set = {tuple(x) for x in movable_location} 
 
+
         cells_not_on_spot = movable_cell_set & movable_cell_set.symmetric_difference(final_formation_set)
         cells_not_on_spot = list(cells_not_on_spot)
         cells_not_on_spot.sort()
@@ -326,6 +327,9 @@ class Player:
         extend = []
         invalid_move_from = []
         invalid_move_to = []
+        if self.upper_right[0] != 54:
+            cells_not_on_spot = self.prioritize(cells_not_on_spot)
+
         for i in range(min(num_movable_cell, len(cells_not_on_spot), len(destination))):
             print('i=', i)
             retract.append(cells_not_on_spot[i])
@@ -343,6 +347,14 @@ class Player:
         # print("periphery=",periphery)
         return retract, extend
 
+    def prioritize(self,l):
+        ## prioritize upper left (low x, high y 
+
+        l_dtype =  [('x-val',int), ('y-val', int)]
+        l_np=np.array(l,dtype=l_dtype)
+        l_np = np.sort(l_np, order='x-val')  
+        l_np = l_np[::-1]
+        return l_np.tolist()
     """borrowed from group 5"""
     
     def bounds(self, current_percept):
