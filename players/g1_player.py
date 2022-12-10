@@ -106,6 +106,7 @@ class Player:
             # #print(("first step")
             upper_right = self.find_upper_right(periphery, -1) 
             infoFields.pivot = int(upper_right[0]) # change the info of the upper right corner
+            upper_right = (int(upper_right[0]),50)
 
             ##print((infoFields.pivot)
             ##print((infoFields.teeth_shifted)
@@ -114,10 +115,11 @@ class Player:
 
         else:
             #print(('lol', infoFields.pivot)
-            upper_right = self.find_upper_right(periphery, infoFields.pivot)
+            upper_right = (infoFields.pivot,50)
 
             ##print((upper_right)
         comb_formation, extra_cell = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
+       
         new_ur = upper_right
         self.upper_right = upper_right
         #print((self.upper_right)
@@ -148,7 +150,7 @@ class Player:
             new_ur  = upper_right
             while extra_cell:
                 #print(("move extra cell",extra_cell)
-                new_ur = ((new_ur[0]+self.teeth_length
+                new_ur = ((new_ur[0]+self.teeth_length+5
                         )%100, new_ur[1])
                 comb_formation.append(new_ur)
                 extra_cell -= 1
@@ -158,11 +160,12 @@ class Player:
         # #print((upper_right)
         moveable_cell_num = math.ceil(self.metabolism* current_size)
         retract, extend = self.move_formation(moveable_cell_num, periphery, movable_location, comb_formation,current_size,periphery)
-        """#print(("comb_formation=", comb_formation)
-        
-        #print(("movable_location=", movable_location)"""
-        #print(("periphery=", periphery)
-        #print(("retract=", retract)
+        print("comb_formation=", comb_formation)
+        print("extend=",extend)
+        print("movable_location=", movable_location)
+        print("periphery=", periphery)
+        print("retract=", retract)
+ 
 
 
         #print(('storing', infoFields.pivot, infoFields.teeth_shifted)
@@ -217,9 +220,8 @@ class Player:
             return False
     
     def give_comb_formation(self, cell_num: int, upper_right: (int, int), teeth_length: int, teeth_gap:int)-> list[(int, int)]:
-        ## (x,y), (x+1,y)
-        ##print(("Number of cells we have", cell_num)
-        #teeth_gap += 1 
+        #attempt to build from the middle 
+        total_cell_num = cell_num
         cell_num -= 1 
         cur_point_x = upper_right[0]
         cur_point_y = upper_right[1]
@@ -230,7 +232,14 @@ class Player:
         gap_left = teeth_gap
         to_right = True
         extra_cell = 0
+        flip = False
+        
         while True > 0:
+            if (cell_num == total_cell_num//2):
+                flip = True
+                cur_point_y = upper_right[1]
+                
+
             if not(cell_num > 0):
                 break
             if  gap == False:
@@ -251,7 +260,10 @@ class Player:
             else:
                 if gap_left > 0: 
                     if  to_right == False:
-                        cur_point_y -= 1
+                        if flip:
+                            cur_point_y += 1
+                        else:
+                            cur_point_y -= 1
                         cur_point_x += 1 # move the coordinate back 
                         cur_point_x %= 100
                         cur_point_y %= 100
@@ -263,12 +275,11 @@ class Player:
                     else:
                         cur_point_x -= 1 # move the coordinate back 
                         cur_point_x %= 100
-                        if (cur_point_x, cur_point_y) not in formation:  
-                            # #print(("duplicate!")
-                            extra_cell +=1
-                            cell_num -= 1
+                        if (cur_point_x, cur_point_y) in formation:  
+                            pass
+                            
                         to_right = False
-                         
+                            
                 else:
                     to_right = True
                     gap = False
@@ -294,7 +305,7 @@ class Player:
         #print((info)
 
         if info == -1:
-            x_coord = max(xs)
+            x_coord = min(xs)
         else:
             x_coord = info
         y_coord = max(ys)
@@ -322,8 +333,8 @@ class Player:
         cells_not_on_spot = list(cells_not_on_spot)
         cells_not_on_spot.sort()
         #print((num_movable_cell)
-        ##print(("cells not on spot",cells_not_on_spot)
-        #print(("cells_not_on_spot=",cells_not_on_spot)
+     
+        print("cells_not_on_spot=",cells_not_on_spot)
         # #print(("wanting_to_move",final_formation_set & movable_cell_set.symmetric_difference(final_formation_set) )
         # #print(('ffs',final_formation_set)
         # #print(('mcs', movable_cell_set)
@@ -332,7 +343,7 @@ class Player:
         ##print((final_formation_set & movable_cell_set.symmetric_difference(final_formation_set))
         destination = list(destination)
         destination.sort()
-        # destination = self.prioritize(destination)
+        #destination = self.prioritize(destination)
         #print(('desty=', destination)
 
         ##print(('num_move_cell', num_movable_cell)
@@ -342,9 +353,7 @@ class Player:
         invalid_move_from = []
         invalid_move_to = []
 
-        if not(self.is_first):
-            #print(('tail')
-            cells_not_on_spot = self.prioritize(cells_not_on_spot)
+        cells_not_on_spot = self.prioritize(cells_not_on_spot)
         
 
         for i in range(min(num_movable_cell, len(cells_not_on_spot), len(destination))):

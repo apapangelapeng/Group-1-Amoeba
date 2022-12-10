@@ -244,7 +244,8 @@ class AmoebaGame:
             else:
                 
                 print("Valid move, but causes separation, hence cancelled.")
-                time.sleep(30)
+                plt.show()
+                time.sleep(10)
                 exit(1)
                 self.logger.info("Invalid move from {} as it does not follow the rules".format(self.player_name))
         else:
