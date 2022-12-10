@@ -263,7 +263,7 @@ class Player:
                     else:
                         cur_point_x -= 1 # move the coordinate back 
                         cur_point_x %= 100
-                        if (cur_point_x, cur_point_y) not in formation:  
+                        if (cur_point_x, cur_point_y)  in formation:  
                             # #print(("duplicate!")
                             extra_cell +=1
                             cell_num -= 1
