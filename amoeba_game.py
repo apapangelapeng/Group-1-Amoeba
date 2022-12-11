@@ -392,6 +392,7 @@ class AmoebaGame:
 
         if not set(move).issubset(set(movable)):
             print("if not set(move).issubset(set(movable)):")
+            print("movable = ",movable )
             for i in move:
                 if i not in movable:
                     print(i)

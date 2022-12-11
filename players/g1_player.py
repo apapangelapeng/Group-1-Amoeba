@@ -125,13 +125,17 @@ class Player:
         #print((self.upper_right)
         while extra_cell:
             #print(('ecece',extra_cell)
-
-            new_ur = ((new_ur[0] #took out self.teeth_length
+            for i in range(10):
+                if extra_cell >=1:
+                    new_ur = ((new_ur[0] +self.teeth_length + i
                        ) %100, new_ur[1])
-            comb_formation.append(new_ur)
-            extra_cell -= 1
-            new_comb_formation, extra_cell = self.give_comb_formation(extra_cell, new_ur, self.teeth_length, self.teeth_gap)
-            comb_formation += new_comb_formation
+                    extra_cell -=1
+                else:
+                    break
+            
+            if extra_cell >0:
+                new_comb_formation, extra_cell = self.give_comb_formation(extra_cell, new_ur, self.teeth_length, self.teeth_gap)
+                comb_formation += new_comb_formation
 
         
         if self.movable(comb_formation, current_percept.amoeba_map):
