@@ -3,6 +3,7 @@ import time
 import signal
 import numpy as np
 import math
+import pickle
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from amoeba_state import AmoebaState
@@ -26,6 +27,10 @@ class AmoebaGame:
         self.use_gui = not args.no_gui
         self.use_vid = not args.no_vid
         self.do_logging = not args.disable_logging
+        self.seperation_error = 0
+        self.teeth_length = args.teeth_length
+        self.teeth_gap = args.teeth_gap
+        self.result_file = args.result_file
         if not self.use_gui:
             self.use_timeout = not args.disable_timeout
         else:
@@ -140,7 +145,7 @@ class AmoebaGame:
             try:
                 start_time = time.time()
                 player = player_class(rng=self.rng, logger=self.get_player_logger(player_name),
-                                      metabolism=self.metabolism, goal_size=self.goal_size, precomp_dir=precomp_dir)
+                                      metabolism=self.metabolism, goal_size=self.goal_size, precomp_dir=precomp_dir,teeth_gap = self.teeth_gap,teeth_length = self.teeth_length)
                 if self.use_timeout:
                     signal.alarm(0)  # Clear alarm
             except TimeoutException:
@@ -213,18 +218,27 @@ class AmoebaGame:
                 exit(1)"""
             self.turns += 1
             self.play_turn()
-            print("Turn {} complete".format(self.turns))
+            #print("Turn {} complete".format(self.turns))
             if self.amoeba_size >= self.goal_size:
                 self.goal_reached = True
                 self.game_end = self.turns
                 print("Goal size achieved!\n\nTurns taken: {}\nFinal size: {}\nGoal size: {}".format(self.turns,
                                                                                                      self.amoeba_size,
                                                                                                      self.goal_size))
+                self.record_result(True,turns_taken=self.turns,final_size=self.amoeba_size)
                 break
 
         if not self.goal_reached:
             print("Goal size not achieved...\n\nFinal size: {}\nGoal size: {}".format(self.amoeba_size, self.goal_size))
-
+            self.record_result(False,turns_taken=self.max_turns,final_size=self.amoeba_size)
+            
+    def record_result(self,succeeded:bool, turns_taken:int, final_size:int):
+        output_file_name = self.result_file
+        index=f"{self.teeth_length},{self.teeth_gap},{self.density},{self.metabolism},{self.start_size}"
+        f = open(output_file_name, "a") # We will create this file.
+        info = f"{index},{succeeded},{turns_taken},{final_size},{self.seperation_error}"
+        f.write(info)
+        
     def play_turn(self):
         self.bacteria_move()
         periphery, eatable_bacteria, movable_cells, amoeba = self.get_periphery_info(True)
@@ -238,19 +252,18 @@ class AmoebaGame:
         if self.check_action(returned_action):
             retract, move, self.player_byte = returned_action
             if self.check_move(retract, move, periphery):
-                print("Move Accepted!")
+                #print("Move Accepted!")
                 self.logger.debug("Received move from {}".format(self.player_name))
                 self.amoeba_move(retract, move)
             else:
                 
                 print("Valid move, but causes separation, hence cancelled.")
-                plt.show()
-                time.sleep(10)
+               
                 exit(1)
                 self.logger.info("Invalid move from {} as it does not follow the rules".format(self.player_name))
         else:
             print("Invalid move")
-            time.sleep(30)
+            
             exit(1)
             self.logger.info("Invalid move from {} as it doesn't follow the return format".format(self.player_name))
 
@@ -425,7 +438,13 @@ class AmoebaGame:
                 stack.append(((a - 1) % constants.map_dim, b))
             if ((a + 1) % constants.map_dim, b) in result and check[(a + 1) % constants.map_dim][b] == 0:
                 stack.append(((a + 1) % constants.map_dim, b))
-        print("(amoeba == check).all()", (amoeba == check).all())
+        if (amoeba == check).all() == False:
+            print("(amoeba == check).all()", (amoeba == check).all())
+            self.seperation_error+=1
+            data = [retract, move, periphery]
+            file_name =f"l_{self.teeth_length}_g_{self.teeth_gap}_d_{self.density}_m_{self.metabolism}_s_{self.start_size}"
+            write_pickle(file_name,data)
+        
         return True
 
     def amoeba_move(self, retract, move):
@@ -577,3 +596,10 @@ class AmoebaGame:
             )
 
             plt.savefig("render/{}.png".format(i))
+def write_pickle(file_name,data):
+        filename = "output_coord/"+file_name+".pickle"
+        os.makedirs(os.path.dirname(filename), exist_ok=True)        
+        with open("output_coord/"+file_name+".pickle", 'wb') as f:
+        
+            pickle.dump(data,f)
+        f.close()

@@ -24,6 +24,9 @@ if __name__ == '__main__':
     parser.add_argument("--player", "-p", default="d", help="Specifying player")
     parser.add_argument("--vid_name", "-v", default="game", help="Naming the video file")
     parser.add_argument("--no_vid", "-nv", action="store_true", help="Stops generating video of the session")
+    parser.add_argument("--teeth_gap", "-tg", type=int, default=2, help="teeth gap size of amoeba")
+    parser.add_argument("--teeth_length", "-tl", type=int, default=2, help="teeth length of amoeba")
+    parser.add_argument("--result_file", "-rf", default="result.csv", help="where to store the data result")
     args = parser.parse_args()
 
     if args.disable_logging:

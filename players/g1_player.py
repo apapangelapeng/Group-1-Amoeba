@@ -29,7 +29,7 @@ def coords_to_map(coords: list[tuple[int, int]], size=MAP_DIM) -> npt.NDArray:
 
 class Player:
     def __init__(self, rng: np.random.Generator, logger: logging.Logger, metabolism: float, goal_size: int,
-                 precomp_dir: str) -> None:
+                 precomp_dir: str,teeth_gap:int,teeth_length:int) -> None:
         #Initialise the player with the basic amoeba information
             #Args:
                 #rng (np.random.Generator): numpy random number generator, use this for same player behavior across run
@@ -60,8 +60,8 @@ class Player:
         self.teeth_shift_iter = 5 # hyper parameter :3
         self.goal_size = goal_size
         self.current_size = goal_size / 4
-        self.teeth_length = 2 # hyper parameter
-        self.teeth_gap = 2 # hyper parameter
+        self.teeth_length = teeth_length # hyper parameter
+        self.teeth_gap = teeth_gap # hyper parameter
         self.acceptable_similarity = 0.8 # how similar the ideal format and the current shape should be before we start to move
         logger.info(f"initalizing player 1, with initalize size :{ goal_size/4},teeth_length:{self.teeth_length}" )
 
@@ -105,7 +105,7 @@ class Player:
             upper_right = (infoFields.pivot,50)
 
 
-        print(current_size, upper_right )
+        ##print(current_size, upper_right )
         comb_formation_1,extra_cell,stem1  = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap)
         comb_formation_2,extra_cell,stem2  = self.give_comb_formation(current_size, upper_right, self.teeth_length, self.teeth_gap,True)
         comb_formation,shift = self.compare_combs(comb_formation_1,comb_formation_2)
@@ -164,12 +164,12 @@ class Player:
         # 
         moveable_cell_num = math.ceil(self.metabolism* current_size)
         retract, extend = self.move_formation(moveable_cell_num, periphery, movable_location, comb_formation,current_size,periphery)
-        print("comb_formation=", comb_formation)
-        print("extend=",extend)
-        print("movable_location=", movable_location)
-        print("periphery=", periphery)
-        print("retract=", retract)
-        print("stem=",self.stem)
+        #print("comb_formation=", comb_formation)
+        #print("extend=",extend)
+        #print("movable_location=", movable_location)
+        #print("periphery=", periphery)
+        #print("retract=", retract)
+        #print("stem=",self.stem)
 
         info = infoFields.store_info_details(infoFields.pivot, infoFields.teeth_shifted)
 
@@ -333,7 +333,7 @@ class Player:
         cells_not_on_spot.sort()
         
      
-        print("cells_not_on_spot=",cells_not_on_spot)
+        #print("cells_not_on_spot=",cells_not_on_spot)
         
         destination = (final_formation_set & movable_cell_set.symmetric_difference(final_formation_set)) & movable_location_set
 
