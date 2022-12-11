@@ -236,7 +236,7 @@ class AmoebaGame:
         output_file_name = self.result_file
         index=f"{self.teeth_length},{self.teeth_gap},{self.density},{self.metabolism},{self.start_size}"
         f = open(output_file_name, "a") # We will create this file.
-        info = f"{index},{succeeded},{turns_taken},{final_size},{self.seperation_error}"
+        info = f"{index},{succeeded},{turns_taken},{final_size},{self.seperation_error}\n"
         f.write(info)
         
     def play_turn(self):

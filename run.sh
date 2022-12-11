@@ -3,7 +3,7 @@ HEADER="teeth_length,teeth_gap,density,metabolism,start_size,index,succeeded,tur
 echo "$HEADER">>$RESULT_FILE
 size=(3 5 8 15 25)
 density=(0.01 0.05 0.1 0.2)
-seed=(5 2 1 1)
+seed=(5 2 1 1 1)
 metabolism=(0.05 0.1 0.25 0.4 1.0)
 
 
